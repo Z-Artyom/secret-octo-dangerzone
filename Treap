@@ -1,0 +1,241 @@
+package immutable;
+
+import java.util.Collection;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Random;
+import java.util.Set;
+
+class Tree implements Map<Integer, Integer> {
+
+    public static int success = 0;
+
+    public boolean isEmpty() {
+        return size() == 0;
+    }
+
+    public boolean containsKey(Object key) {
+        throw new UnsupportedOperationException("Not supported");
+    }
+
+    public boolean containsValue(Object value) {
+        throw new UnsupportedOperationException("Not supported");
+    }
+
+    public Integer get(Object key) { 
+        return get((Integer) key);
+    }
+
+    public Integer put(Integer key, Integer value) { 
+        insert(head, new Node(key, value));
+        return success;
+    }
+
+    public Integer remove(Object key) {
+        throw new UnsupportedOperationException("Not supported");
+    }
+
+    public void putAll(Map<? extends Integer, ? extends Integer> m) {
+        throw new UnsupportedOperationException("Not supported");
+    }
+
+    public void clear() {
+        throw new UnsupportedOperationException("Not supported");
+    }
+
+    public Set<Integer> keySet() {
+        throw new UnsupportedOperationException("Not supported");
+    }
+
+    public Collection<Integer> values() {
+        throw new UnsupportedOperationException("Not supported");
+    }
+
+    public Set<Entry<Integer, Integer>> entrySet() {
+        throw new UnsupportedOperationException("Not supported");
+    }
+
+    static class Node {
+
+        int key;
+        int prior;
+        int count; 
+        Node left; 
+        Node right;
+
+        public Node(int key, int prior) { 
+            this.key = key;
+            this.prior = prior;
+            this.left = new Node();
+            this.right = new Node();
+        }
+
+        public Node() {
+        }
+
+        public boolean isNull() {
+            return left == null;
+        }
+
+        public void setNull() {
+            left = right = null;
+        }
+
+        public void take(Node other) {
+            key = other.key;
+            prior = other.prior;
+            count = other.count;
+            left = other.left;
+            right = other.right;
+        }
+    }
+    private Random rm = new Random(99999);
+    private Node head = new Node();
+
+    public void insert(int key) { 
+        insert(head, new Node(key, rm.nextInt())); 
+    }
+
+    private void insert(Node head, Node node) {
+        if (head.isNull()) { 
+            head.take(node); 
+        } else if (head.prior >= node.prior) {
+            insert(node.key < head.key ? head.left : head.right, node);
+        } else {
+            split(head, node.left, node.right, node.key); 
+            head.take(node);
+        }
+        update(head);
+    }
+
+    private void split(Node head, Node left, Node right, int key) {
+        if (head.isNull()) { 
+            left.setNull();
+            right.setNull();
+        } else if (key < head.key) {
+            right.take(head);
+            split(right.left, left, right.left, key);
+        } else {
+            left.take(head);
+            split(left.right, left.right, right, key);
+        }
+        update(left); 
+        update(right);
+    }
+
+    public void remove(int key) { 
+        remove(head, key);
+    }
+
+    private void remove(Node head, int key) {
+        if (!head.isNull()) {
+            if (head.key == key) {
+                merge(head, head.left, head.right); 
+            } else {
+                remove(key < head.key ? head.left : head.right, key); 
+            }
+        }
+        update(head);
+    }
+
+    private void merge(Node head, Node left, Node right) { 
+        if (left.isNull()) {
+            head.take(right);
+        } else if (right.isNull()) {
+            head.take(left);
+        } else if (left.prior >= right.prior) {
+            merge(left.right, left.right, right);
+            head.take(left);
+        } else {
+            merge(right.left, left, right.left);
+            head.take(right);
+        }
+        update(head);
+    }
+
+    public boolean search(int key) {
+        return search(head, key);
+    }
+
+    private boolean search(Node head, int key) {
+        if (head.isNull()) { 
+            return false;
+        } else {
+            if (head.key == key) { 
+                return true;
+            } else { 
+                return search(key < head.key ? head.left : head.right, key);
+            }
+        }
+    }
+
+    private void update(Node head) {
+        if (!head.isNull()) {
+            head.count = 1 + count(head.left) + count(head.right);
+        }
+    }
+
+    private int count(Node head) {
+        return head.isNull() ? 0 : head.count;
+    }
+
+    public int size() {
+        return count(head);
+    }
+
+    public int get(int index) { 
+        if (index < 0 || index >= size()) {
+            throw new IllegalArgumentException();
+        }
+        return get(head, index);
+    }
+
+    private int get(Node head, int index) {
+        int count = count(head.left);
+        if (count == index) { 
+            return head.key;
+        } else if (count > index) { 
+            return get(head.left, index);
+        } else {
+            return get(head.right, index - count - 1);
+        }
+    }
+
+    @Override
+    public String toString() { 
+        StringBuilder builder = new StringBuilder();
+        builder.append('[');
+        toString(head, builder);
+        builder.append(']');
+        return builder.toString();
+    }
+
+    private void toString(Node head, StringBuilder builder) {
+        if (!head.isNull()) {
+            toString(head.left, builder);
+            if (builder.length() > 1) {
+                builder.append(", ");
+            }
+            builder.append(head.key);
+            toString(head.right, builder);
+        }
+    }
+}
+
+public class Treap_tree {
+
+    public static void main(String[] args) {
+       
+        Tree t = new Tree(); 
+        Random rand = new Random();
+        for (int i = 0; i < 10; i++) { 
+            t.insert(rand.nextInt(100));
+        }
+        t.insert(38); 
+        System.out.println(t.toString()); 
+        System.out.println(t.search(38));
+        t.remove(38);
+        System.out.println(t.toString()); 
+        System.out.println(t.search(38)); 
+    }
+}
